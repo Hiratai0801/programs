@@ -43,32 +43,22 @@ def output_distance(predict_result, depth_frame):
         return (name, distance)
     return ("None", 0)
 
-#人を認識した際の距離による処理
-def personCheck (nm, dis):
-    if nm == "person":
-        print ("人間を確認しました")
-        print ("ゴミ箱と人間の距離は" + str(dis) + "cmです。")
-        if (dis <= 0.75) and (dis != 0.0):
-            print("距離が近くなってきたので停止します")
-
-
-
 #メイン処理
-def main():
-    # Start streaming
+def image_recognition():
+    #ストリーミングの開始
     pipeline.start(config)
 
     try:
         while True:
 
-            # Wait for a coherent pair of frames: depth and color
+            #フレームのコヒーレントペアを待つ(深度と色)
             frames = pipeline.wait_for_frames()
             depth_frame = frames.get_depth_frame()
             color_frame = frames.get_color_frame()
             if not depth_frame or not color_frame:
                 continue
 
-            # Convert images to numpy arrays
+            #取得した画像をnumpy配列に変換
             depth_image = np.asanyarray(depth_frame.get_data())
             color_image = np.asanyarray(color_frame.get_data())
 
@@ -81,34 +71,26 @@ def main():
             #距離を出力
             (nam, dist) = output_distance(result, depth_frame)
             
-            f1 = open('word.txt', ' w')
+            f1 = open('obj.txt', 'w')
             f2 = open('distance.txt', 'w')
             f1.write(nam)
             f2.write(str(dist))
-            f1.close()
-            f2.close()
 
-            personCheck (nam, dist)
             
-            """
-            # Apply colormap on depth image (image must be converted to 8-bit per pixel first)
+            
+            #深度画像にカラーマップを適用 (最初に画像を 8 ビット/ピクセルに変換する必要がある)
             depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
-
-
-            # Stack both images horizontally
+            #二つの画像を水平方向に重ねる
             images = np.hstack((color_image, depth_colormap))
-
-            # Show images
+            #表示
             cv2.namedWindow('RealSense', cv2.WINDOW_AUTOSIZE)
             cv2.imshow('RealSense', images)
             cv2.waitKey(1)
-            """
+            
 
     finally:
 
-        # Stop streaming
+        #ストリーミング停止
         pipeline.stop()
 
-if __name__ == '__main__':
 
-    main()

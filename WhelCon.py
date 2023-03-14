@@ -1,47 +1,42 @@
 # -*- coding: utf-8 -*-
 
+import time
 import RPi.GPIO as GPIO
-import jtalk
 
-r = GPIO.PWM()
-l = GPIO.PWM()
-c = GPIO.PWM()
-
-def setup():
-    #GPIOセットアップ
-    #GPIOピンの基盤の番号で指定する
-    GPIO.setmode(GPIO.BOARD)
-    #GPIO.setup(基盤のピン番号, GPIO.OUT)
-    GPIO.setup(5, GPIO.OUT)
-    GPIO.setup(7, GPIO.OUT)
-    GPIO.setup(13, GPIO.OUT)
-    GPIO.setup(11, GPIO.OUT)
-    GPIO.setup(10, GPIO.OUT)
-    GPIO.setup(12, GPIO.OUT)
-    GPIO.setup(3, GPIO.OUT)
-    GPIO.setup(15, GPIO.OUT)
-    GPIO.setup(8, GPIO.OUT)
-    #GPIO.output(基盤のピン番号, GPIO.LOW)
-    #GPIO.output(基盤のピン番号, GPIO.HIGH)
-    #右ホイール
-    GPIO.output(5, GPIO.LOW)
-    GPIO.output(7, GPIO.HIGH)
-    #左ホイール
-    GPIO.output(13, GPIO.LOW)
-    GPIO.output(11, GPIO.HIGH)
-    #中央ホイール
-    GPIO.output(10, GPIO.LOW)
-    GPIO.output(12, GPIO.HIGH)
-    #PWMセットアップ
-    #変数 = GPIO.PWM(基盤のピン番号, デューティー比)
-    r = GPIO.PWM(3, 50)
-    l = GPIO.PWM(15, 50)
-    c = GPIO.PWM(8, 50)
-    #スタンバイOK
-    #変数.start(出力値)
-    r.start(0)
-    l.start(0)
-    c.start(0)
+#GPIOセットアップ
+#GPIOピンの基盤の番号で指定する
+GPIO.setmode(GPIO.BOARD)
+#GPIO.setup(基盤のピン番号, GPIO.OUT)
+GPIO.setup(5, GPIO.OUT)
+GPIO.setup(7, GPIO.OUT)
+GPIO.setup(13, GPIO.OUT)
+GPIO.setup(11, GPIO.OUT)
+GPIO.setup(10, GPIO.OUT)
+GPIO.setup(12, GPIO.OUT)
+GPIO.setup(3, GPIO.OUT)
+GPIO.setup(15, GPIO.OUT)
+GPIO.setup(8, GPIO.OUT)
+#GPIO.output(基盤のピン番号, GPIO.LOW)
+#GPIO.output(基盤のピン番号, GPIO.HIGH)
+#右ホイール
+GPIO.output(5, GPIO.LOW)
+GPIO.output(7, GPIO.HIGH)
+#左ホイール
+GPIO.output(13, GPIO.LOW)
+GPIO.output(11, GPIO.HIGH)
+#中央ホイール
+GPIO.output(10, GPIO.LOW)
+GPIO.output(12, GPIO.HIGH)
+#PWMセットアップ
+#変数 = GPIO.PWM(基盤のピン番号, デューティー比)
+r = GPIO.PWM(3, 50)
+l = GPIO.PWM(15, 50)
+c = GPIO.PWM(8, 50)
+#スタンバイOK
+#変数.start(出力値)
+r.start(0)
+l.start(0)
+c.start(0)
 
 #直進処理
 def straight():
@@ -105,32 +100,48 @@ def end():
     GPIO.cleanup()
 
 
-def main():
-    while True:
-        f1 = open('word.txt', 'r', encoding='UTF-8')
-        f2 = open('distance.txt', 'r', encoding='UTF-8')
-        name =f1.read()
-        dis = f2.read()
-        if name == "person":
-            if (dis <= 0.75) and (dis != 0.0):
-                stop()
-                jtalk.jtalk('とまりました')
+def wheel_control():
+    t_end = time.time() + 1 * 15
+    f1 = open('objudge.txt', 'r')
+    f2 = open('disjudge.txt', 'r')
+    f3 = open('wheljudge.txt', 'w')
+    f4 = open('start.txt', 'r')
+    try:
+        while True:
+            obj = f1.read()
+            dij = f2.read()
+            if obj == '1':
+                if dij == '0':
+                    stop()
+                    print('とまりました')
+                    f3.write('2')
+                    while True:
+                        st = f4.read()
+                        if st == '1':
+                            break
+                else:
+                    straight()
+                    print('ついていきます')
+                    f3.write('1')
             else:
-                straight()
-                jtalk.jtalk('ついていきますっ')
-        elif name != "person":
-            jtalk.jtalk('どこですかー？')
-            turn()
-            while True:
-                name = f1.read()
-                if name == "person":
-                    jtalk.jtalk('見つけましたっ')
-                    break
+                turn()
+                while time.time() < t_end:
+                    print('どこですか')
+                    f3.write('5')
+                    obj = f1.read()
+                    if obj == '1':
+                        print('見つけました')
+                        f3.write('3')
+                        break
+                print('みつかるませんでしたので停止します')
+                f3.write('4')
+                stop()
 
-        
-    
-    
+    finally:
+        end()
+        f1.close()
+        f2.close()
+        f3.close()
 
 if __name__ == '__main__':
-
-    main()
+    wheel_control()
